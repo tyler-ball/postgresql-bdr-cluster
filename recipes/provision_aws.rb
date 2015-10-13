@@ -54,5 +54,6 @@ node['postgresql-bdr-cluster']['cluster_nodes'].each do |vmname|
     attribute 'postgresql-bdr-cluster', { use_interface: 'eth0' }
     recipe 'postgresql-bdr-cluster::aws_instance_setup'
     recipe 'postgresql-bdr-cluster::default'
+    aws_tags 'X-Project' => "CSE"
   end
 end
