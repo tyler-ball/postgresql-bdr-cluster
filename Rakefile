@@ -5,11 +5,26 @@ task :up => :setup do
   sh('chef-client -z -o postgresql-bdr-cluster::provision')
 end
 
+desc 'Provision with terraform'
+task :terraup => :setup do
+  sh('knife serve &')
+  sh('terraform apply')
+end
+
 desc 'Destroy the Postgres cluster'
 task :destroy do
   sh('chef-client -z -o postgresql-bdr-cluster::destroy')
 end
 task :cleanup => :destroy
+
+desc 'Destroy the Postgres cluster'
+task :terradestroy do
+  # kill all the port forwarding processes
+  # this should be done via terraform, but having issues getting it to work
+  sh('pkill -f ec2-user; true')
+  sh('terraform destroy --force')
+  sh('pkill -f "knife serve"; true')
+end
 
 desc 'Destroy and rebuild each node of the cluster individually'
 task :rolling_rebuild => :setup do

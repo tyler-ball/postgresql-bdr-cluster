@@ -53,11 +53,23 @@ resource "aws_security_group" "postgresql_cluster_sg" {
       protocol = "tcp"
       cidr_blocks = ["0.0.0.0/0"]
   }
+  ingress {
+      from_port = 0
+      to_port = 0
+      protocol = "-1"
+      self = true
+  }
   egress {
       from_port = 0
       to_port = 0
       protocol = "-1"
       cidr_blocks = ["0.0.0.0/0"]
+  }
+  egress {
+      from_port = 0
+      to_port = 0
+      protocol = "-1"
+      self = true
   }
   tags {
     X-Project = "Provisioning"
@@ -83,13 +95,10 @@ resource "aws_instance" "postgresql-1" {
     user = "ec2-user"
     key_file = "/Users/tball/chef_repo/cookbooks/postgresql-bdr-cluster/.chef/keys/${var.user}@postgresql-bdr-cluster"
   }
-  # Update our local cookbook cache
-  provisioner "local-exec" {
-    command = "berks update && rm -rf vendor/* && berks vendor vendor/"
-  }
   # Make sure the remote node is connectable
+  # Drop the ohai hints file so it populates automatic attributes
   provisioner "remote-exec" {
-    inline = "echo 'foo'"
+    inline = "sudo mkdir -p /etc/chef/ohai/hints/ && sudo touch /etc/chef/ohai/hints/ec2.json"
   }
   # Forward 8889 to the remote host
   provisioner "local-exec" {
@@ -106,10 +115,6 @@ resource "aws_instance" "postgresql-1" {
         use_interface = "eth0"
       }
     }
-  }
-  # stop port forwarding
-  provisioner "local-exec" {
-    command = "./murder.sh"
   }
   instance_type = "c3.xlarge"
   ami = "ami-4dbf9e7d"
@@ -130,6 +135,104 @@ resource "aws_instance" "postgresql-1" {
   }
   tags {
     Name = "postgresql-1.example.com"
+    X-Project = "CSE"
+  }
+}
+
+resource "aws_instance" "postgresql-2" {
+  connection {
+    user = "ec2-user"
+    key_file = "/Users/tball/chef_repo/cookbooks/postgresql-bdr-cluster/.chef/keys/${var.user}@postgresql-bdr-cluster"
+  }
+  # Make sure the remote node is connectable
+  # Drop the ohai hints file so it populates automatic attributes
+  provisioner "remote-exec" {
+    inline = "sudo mkdir -p /etc/chef/ohai/hints/ && sudo touch /etc/chef/ohai/hints/ec2.json"
+  }
+  # Forward 8889 to the remote host
+  provisioner "local-exec" {
+    command = "./forward.sh ${var.user} ${aws_instance.postgresql-2.public_ip}"
+  }
+  provisioner "chef" {
+    server_url = "http://localhost:8889"
+    validation_client_name = "tball"
+    validation_key_path = "~/.chef/tball.pem"
+    node_name = "postgresql-2.example.com"
+    run_list = [ "postgresql-bdr-cluster::aws_instance_setup", "postgresql-bdr-cluster::default" ]
+    attributes  {
+      "postgresql-bdr-cluster" {
+        use_interface = "eth0"
+      }
+    }
+  }
+  instance_type = "c3.xlarge"
+  ami = "ami-4dbf9e7d"
+  key_name = "${var.user}@postgresql-bdr-cluster"
+  subnet_id = "${aws_subnet.postgresql_cluster_subnet.id}"
+  security_groups = [ "${aws_security_group.postgresql_cluster_sg.id}" ]
+  root_block_device {
+    volume_type = "gp2"
+    volume_size = 12
+  }
+  ephemeral_block_device {
+    device_name = "/dev/sdb"
+    virtual_name = "ephemeral0"
+  }
+  ephemeral_block_device {
+    device_name = "/dev/sdc"
+    virtual_name = "ephemeral1"
+  }
+  tags {
+    Name = "postgresql-2.example.com"
+    X-Project = "CSE"
+  }
+}
+
+resource "aws_instance" "postgresql-3" {
+  connection {
+    user = "ec2-user"
+    key_file = "/Users/tball/chef_repo/cookbooks/postgresql-bdr-cluster/.chef/keys/${var.user}@postgresql-bdr-cluster"
+  }
+  # Make sure the remote node is connectable
+  # Drop the ohai hints file so it populates automatic attributes
+  provisioner "remote-exec" {
+    inline = "sudo mkdir -p /etc/chef/ohai/hints/ && sudo touch /etc/chef/ohai/hints/ec2.json"
+  }
+  # Forward 8889 to the remote host
+  provisioner "local-exec" {
+    command = "./forward.sh ${var.user} ${aws_instance.postgresql-3.public_ip}"
+  }
+  provisioner "chef" {
+    server_url = "http://localhost:8889"
+    validation_client_name = "tball"
+    validation_key_path = "~/.chef/tball.pem"
+    node_name = "postgresql-3.example.com"
+    run_list = [ "postgresql-bdr-cluster::aws_instance_setup", "postgresql-bdr-cluster::default" ]
+    attributes  {
+      "postgresql-bdr-cluster" {
+        use_interface = "eth0"
+      }
+    }
+  }
+  instance_type = "c3.xlarge"
+  ami = "ami-4dbf9e7d"
+  key_name = "${var.user}@postgresql-bdr-cluster"
+  subnet_id = "${aws_subnet.postgresql_cluster_subnet.id}"
+  security_groups = [ "${aws_security_group.postgresql_cluster_sg.id}" ]
+  root_block_device {
+    volume_type = "gp2"
+    volume_size = 12
+  }
+  ephemeral_block_device {
+    device_name = "/dev/sdb"
+    virtual_name = "ephemeral0"
+  }
+  ephemeral_block_device {
+    device_name = "/dev/sdc"
+    virtual_name = "ephemeral1"
+  }
+  tags {
+    Name = "postgresql-3.example.com"
     X-Project = "CSE"
   }
 }
