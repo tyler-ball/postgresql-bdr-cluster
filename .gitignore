@@ -21,3 +21,7 @@ nodes
 clients
 .chef/local-mode-cache/
 .chef/keys/
+
+terraform.tfstate*
+.pid
+data_bags
