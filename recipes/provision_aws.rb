@@ -23,12 +23,20 @@ aws_vpc 'postgresql_cluster_vpc' do
   internet_gateway true
   enable_dns_hostnames true
   main_routes '0.0.0.0/0' => :internet_gateway
+  aws_tags 'X-Project' => "CSE"
 end
 
 aws_security_group 'postgresql_cluster_sg' do
   vpc 'postgresql_cluster_vpc'
-  inbound_rules '0.0.0.0/0' => [ 22, 80 ]
-  outbound_rules [ 22, 80 ] => '0.0.0.0/0'
+  inbound_rules(lazy do {
+    '0.0.0.0/0' => [ 22 ],
+    'postgresql_cluster_sg' => {port: -1, protocol: -1}
+  } end)
+  outbound_rules(lazy do {
+    [ 22, 80, 443 ] => '0.0.0.0/0',
+    {port: -1, protocol: -1} => 'postgresql_cluster_sg'
+  } end)
+  aws_tags 'X-Project' => "CSE"
 end
 
 aws_subnet 'postgresql_cluster_subnet' do
@@ -36,6 +44,7 @@ aws_subnet 'postgresql_cluster_subnet' do
   cidr_block '10.0.0.0/24'
   map_public_ip_on_launch true
   availability_zone (driver.ec2_client.describe_availability_zones.availability_zones.map {|r| r.zone_name}).first
+  aws_tags 'X-Project' => "CSE"
 end
 
 # Cannot pass security_groups into aws_options and have it come back out
