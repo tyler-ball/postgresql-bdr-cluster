@@ -7,8 +7,9 @@ end
 
 desc 'Provision with terraform'
 task :terraup => :setup do
+  sh('pkill -f "knife serve"; true') # Kill any existing servers in case they are sitting around
   sh('knife serve &')
-  sh('terraform apply')
+  sh("terraform apply -var 'user=#{ENV['USER']}' -var 'client_name=#{ENV['USER']}'")
 end
 
 desc 'Destroy the Postgres cluster'
@@ -22,7 +23,7 @@ task :terradestroy do
   # kill all the port forwarding processes
   # this should be done via terraform, but having issues getting it to work
   sh('pkill -f ec2-user; true')
-  sh('terraform destroy --force')
+  sh("terraform destroy --force -var 'user=#{ENV['USER']}' -var 'client_name=#{ENV['USER']}'")
   sh('pkill -f "knife serve"; true')
 end
 
