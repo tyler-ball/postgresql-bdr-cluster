@@ -25,6 +25,7 @@ task :terradestroy do
   sh('pkill -f ec2-user; true')
   sh("terraform destroy --force -var 'user=#{ENV['USER']}' -var 'client_name=#{ENV['USER']}'")
   sh('pkill -f "knife serve"; true')
+  sh('rm -f nodes/*')
 end
 
 desc 'Destroy and rebuild each node of the cluster individually'

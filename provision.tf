@@ -6,17 +6,18 @@
 
   # Chef Provisioning
   1) Install the ChefDK
-  2) run `AWS_DEFAULT_PROFILE=foo rake up` from within this repo.  You only need to set the env variable if you are using a non-default profile.
-  3) check us-west-2 in the console - you should see everything running!
+  2) Ensure your `~/.aws/credentials` file is populated with your credentials (either in the [default] or a named profile)
+  3) run `AWS_DEFAULT_PROFILE=foo rake up` from within this repo.  You only need to set the env variable if you are using a non-default profile.
+  4) check us-west-2 in the console - you should see everything running!
     1) Note - there is a bug in the provisioning cookbook right now where the postgres nodes cannot find each other
-  4) run `AWS_DEFAULT_PROFILE=foo rake destroy` to destroy it.
-  5) check `./nodes` and make sure it is empty - otherwise this will mess up chef search
+  5) run `AWS_DEFAULT_PROFILE=foo rake destroy` to destroy it.
+  6) check `./nodes` and make sure it is empty - otherwise this will mess up chef search
 
   # Terraform
   1) run `AWS_ACCESS_KEY_ID=foo AWS_SECRET_ACCESS_KEY=bar rake terraup` from within this repo.  There is an open TF bug for supporting profiles in ~/.aws/credentials.
     a) Modify the Rakefile if you want to change the user or client_name
     b) This also depends on the key having been created by chef-provisioning - terraform doesn't have a way to create custom keys, only upload them
-  2)
+  2) run `AWS_ACCESS_KEY_ID=foo AWS_SECRET_ACCESS_KEY=bar rake terradestroy` to clean the instances up
 */
 
 provider "aws" {
@@ -116,7 +117,7 @@ resource "aws_route_table_association" "postgresql_cluster_public_routing" {
 }
 
 resource "aws_instance" "postgresql" {
-  count = 1
+  count = 3
   connection {
     user = "ec2-user"
     key_file = ".chef/keys/${var.user}@postgresql-bdr-cluster"
